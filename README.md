@@ -1,286 +1,194 @@
-# Rakshak — AI-Powered Farming Assistant
+<div align="center">
 
-## Overview
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,14,20&height=200&section=header&text=Rakshak&fontSize=70&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=AI-Powered%20Farming%20Intelligence%20%7C%20Gemini%20AI%20%2B%20Earth%20Engine&descAlignY=58&descSize=16"/>
 
-Rakshak is an AI-driven farming assistant designed to help smallholder farmers and agronomists make data-driven decisions. The app combines satellite and sensor data, simple ML/AI models, and rule-based automation to deliver timely recommendations for irrigation, pest management, fertilizer application, and crop health monitoring.
+<br/>
 
-Firebase serves as the backbone: Authentication, Realtime Database / Firestore, Cloud Functions, Storage, and Cloud Messaging power the backend for all data ingestion, processing, notifications, and user management.
+![Gemini AI](https://img.shields.io/badge/Gemini_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+![Earth Engine](https://img.shields.io/badge/Google_Earth_Engine-34A853?style=for-the-badge&logo=google&logoColor=white)
+![n8n](https://img.shields.io/badge/n8n-EF6C00?style=for-the-badge&logo=n8n&logoColor=white)
+![Vercel](https://img.shields.io/badge/Deployed_on_Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
-This README documents architecture, setup, APIs, data schema, deployment, and best practices so you can deploy Rakshak locally or on a production Firebase project.
+<br/>
 
----
+> **AI-powered farming assistant that gives every farmer the intelligence of an agronomist — in their pocket.**
+> Built for a national competition. Deployed live.
 
-## Key Features
+<br/>
 
-* Field registration and geotagging
-* Crop calendar and phenology tracking
-* Soil moisture and weather-driven irrigation alerts
-* Pest and disease detection (image-based) using AI
-* Fertilizer recommendation engine (rule-based + ML)
-* Push notifications and SMS alerts via Firebase Cloud Messaging (FCM) and third-party SMS providers
-* Offline-first data capture for low-connectivity environments
-* Role-based access (farmer, agronomist, admin)
-* Historical farm log and analytics dashboards
+[![Live Demo](https://img.shields.io/badge/🌾_Live_Demo-Visit_Rakshak-34A853?style=for-the-badge)](https://rakshak-app-eosin.vercel.app/dashboard)
 
----
-
-## Architecture
-
-1. **Client apps (Android/Flutter, Web/React)** — UI for farmers and agronomists, offline caching, and media upload.
-2. **Firebase Auth** — Email/phone-based authentication and role management.
-3. **Firestore / Realtime DB** — Primary data store for users, fields, events, logs, and recommendations.
-4. **Cloud Storage** — Stores photos, drone images, and generated reports.
-5. **Cloud Functions** — Serverless compute for processing images (invoke AI), running rules, sending notifications, and scheduled tasks (cron).
-6. **Third-party AI endpoints** — Optional: Gemini Vision, custom TensorFlow/TF Lite models for pest/disease detection.
-7. **FCM & SMS Gateway** — Notification channels to deliver alerts.
-
-Diagram (logical):
-
-```
-[Mobile/Web] <---> Firebase Auth
-       |                 |
-       |                 v
-       |             Firestore
-       v                 |
-   Cloud Storage <---- Cloud Functions ----> 3rd-party AI
-       |
-       v
-  FCM / SMS
-```
+</div>
 
 ---
 
-## Technology Stack
+## 💡 The Problem
 
-* Frontend: Flutter (recommended) / React
-* Backend: Firebase (Auth, Firestore, Cloud Functions, Storage, FCM)
-* AI: Gemini Vision or custom TensorFlow.js / TF Lite models
-* Dev Tools: Node.js, Firebase CLI, GitHub Actions (CI/CD)
+Indian farmers face three critical challenges every season:
+
+- 🦠 **Crop diseases** — identified too late, after damage is done
+- 🌦️ **Unpredictable weather** — no early warning system for smallholders
+- 📉 **Market blindness** — selling at wrong time due to no price visibility
+
+Most solutions require expensive hardware, internet expertise, or agronomist access that rural farmers simply don't have.
+
+**Rakshak bridges that gap with AI.**
 
 ---
 
-## Data Model
+## ✨ Features
 
-### Users (collection: `users`)
-
-```json
-{
-  "uid": "user_123",
-  "name": "Ram",
-  "phone": "+91xxxxxxxxxx",
-  "role": "farmer", // or agronomist, admin
-  "village": "Village Name",
-  "created_at": "2025-11-01T08:00:00Z"
-}
 ```
-
-### Fields (collection: `fields`)
-
-```json
-{
-  "field_id": "field_456",
-  "owner_uid": "user_123",
-  "name": "North Plot",
-  "latlng": {"lat": 26.9124, "lng": 75.7873},
-  "area_hectares": 0.5,
-  "soil_type": "Loamy",
-  "crop": "Wheat",
-  "sowing_date": "2025-10-10"
-}
-```
-
-### Measurements (collection: `measurements`)
-
-```json
-{
-  "field_id": "field_456",
-  "timestamp": "2025-11-08T06:00:00Z",
-  "type": "soil_moisture", // or temperature, humidity
-  "value": 22.5
-}
-```
-
-### Events / Recommendations (collection: `events`)
-
-```json
-{
-  "event_id": "evt_789",
-  "field_id": "field_456",
-  "type": "irrigation_alert",
-  "message": "Soil moisture at 22% — recommended irrigation 20mm",
-  "priority": "high",
-  "created_at": "2025-11-08T07:00:00Z",
-  "status": "pending"
-}
+📸 Crop Disease Detection    →  Upload a crop photo → AI identifies disease + treatment plan
+🌦️ Weather-Based Alerts      →  Real-time weather monitoring + actionable farm advisories  
+🛰️ Satellite Field Monitor   →  Google Earth Engine integration → live field health view
+💰 Market Price Tracker      →  Current mandi prices → know the best time to sell
+🌱 Soil Health Analysis      →  Soil condition insights + crop-specific recommendations
+🤖 AI Advisory Chatbot       →  Ask farming questions in natural language, get expert answers
 ```
 
 ---
 
-## Setup & Local Development
+## 🎬 How It Works
+
+### 📸 Crop Disease Pipeline
+
+```
+Farmer uploads crop photo
+        ↓
+Gemini Pro Vision analyses the image
+        ↓
+AI identifies:  disease name
+                severity level
+                affected area estimate
+                treatment recommendations
+                preventive measures
+        ↓
+Advisory displayed + logged
+```
+
+### 🛰️ Satellite Monitoring Pipeline
+
+```
+Farmer enters field location
+        ↓
+Google Earth Engine fetches satellite imagery
+        ↓
+Field health indices calculated (NDVI, soil moisture)
+        ↓
+Visual field map + health summary displayed
+        ↓
+Alerts triggered if anomalies detected
+```
+
+### 💰 Market Price Pipeline
+
+```
+Farmer selects crop type + region
+        ↓
+Live mandi price data fetched
+        ↓
+Price trends + best selling window shown
+        ↓
+AI advisory: sell now or wait?
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **AI Model** | Google Gemini AI (crop analysis + advisory) |
+| **Satellite Data** | Google Earth Engine (field monitoring) |
+| **Backend / Auth** | Firebase (Firestore + Authentication) |
+| **Automation** | n8n (workflow orchestration + alerts) |
+| **Deployment** | Vercel |
+
+---
+
+## 🚀 Live Demo
+
+> 🌾 **[rakshak-app-eosin.vercel.app/dashboard](https://rakshak-app-eosin.vercel.app/dashboard)**
+
+Try it live — no installation needed.
+
+---
+
+## 📦 Run Locally
 
 ### Prerequisites
+- Node.js 18+
+- Firebase project + credentials
+- Google Gemini API key
+- Google Earth Engine access
 
-* Node.js 18+
-* Firebase CLI (`npm i -g firebase-tools`)
-* Google Cloud account with Firebase project
-* (Optional) API keys for Gemini Vision or your AI provider
-
-### Steps
-
-1. Clone repo:
+### Setup
 
 ```bash
-git clone <repo-url>
-cd rakshak
-```
+# 1. Clone the repo
+git clone https://github.com/Hemkumar247/Rakshak-App.git
+cd Rakshak-App
 
-2. Install dependencies for functions:
-
-```bash
-cd functions
+# 2. Install dependencies
 npm install
-```
 
-3. Initialize Firebase (if not yet):
+# 3. Configure environment variables
+cp .env.example .env.local
+# Fill in your Firebase config, Gemini API key, Earth Engine credentials
 
-```bash
-firebase login
-firebase init
-# Select Firestore, Functions, Hosting (if web), Storage
-```
-
-4. Configure environment variables for Functions (locally and production):
-
-```bash
-firebase functions:config:set ai.provider="gemini" ai.key="YOUR_KEY" sms.provider="twilio" sms.sid="..." sms.token="..."
-```
-
-5. Run emulators for local dev:
-
-```bash
-firebase emulators:start --only firestore,functions,auth,storage
-```
-
-6. Deploy functions and hosting:
-
-```bash
-firebase deploy --only functions,firestore,storage,hosting
+# 4. Start the dev server
+npm run dev
 ```
 
 ---
 
-## Cloud Functions (Examples)
+## 🎯 Built For
 
-* `onImageUpload`: Triggered when an image is uploaded to Cloud Storage. Calls AI inference endpoint and writes detection + recommendations to Firestore.
-* `scheduledIrrigationCheck`: Cron job that runs daily to evaluate fields using weather forecasts and soil data and generates irrigation events.
-* `onMeasurementWrite`: Listens to new measurements and triggers threshold-based alerts.
-* `sendNotification`: Sends FCM push + fallback SMS when a high-priority event is created.
+This project was developed and submitted for a **national-level competition**, targeting real agricultural challenges faced by Indian farmers — particularly smallholders in Tamil Nadu and other rural regions.
 
-Example Node.js function skeleton:
-
-```js
-exports.onImageUpload = functions.storage.object().onFinalize(async (object) => {
-  const filePath = object.name;
-  // download, call AI, write results
-});
-```
+The focus was on:
+- **Accessibility** — usable by farmers with minimal tech literacy
+- **Real impact** — features grounded in actual farming pain points
+- **End-to-end delivery** — from AI model to live deployed product
 
 ---
 
-## AI Integration
+## 🔮 Roadmap
 
-1. **Pest/Disease Detection:** Send image bytes to Gemini Vision or custom TF Lite model endpoint and parse labels/confidence. Store label and confidence in `events` collection.
-2. **Fertilizer Recommendations:** Use a mix of rule-based logic (soil tests, crop type, growth stage) and lightweight regression models to suggest NPK doses.
-3. **Irrigation Scheduler:** Combine soil moisture, forecast precipitation (OpenWeather API), and evapotranspiration heuristics to compute irrigation need.
-
----
-
-## Offline-first Strategy
-
-* Use Firestore offline persistence on mobile to cache writes and sync when online.
-* Queue images locally and upload when connection is available.
-* Add lightweight local rules to warn users when critical thresholds are reached even offline.
+- [ ] Vernacular language support (Tamil, Hindi, Telugu)
+- [ ] Offline mode for low-connectivity rural areas
+- [ ] WhatsApp bot integration via n8n
+- [ ] Community forum for farmer-to-farmer knowledge sharing
+- [ ] Government scheme eligibility checker
+- [ ] Yield prediction based on historical + satellite data
 
 ---
 
-## Notifications and Alerts
+## 🤝 Contributing
 
-* Use FCM to deliver push notifications to the app.
-* For critical alerts in low-connectivity regions, fall back to SMS using Twilio or an SMS gateway.
-* Notification example: "Irrigation recommended for North Plot — apply 20mm within 24 hours."
-
----
-
-## Security & Privacy
-
-* Enforce Firestore security rules by user role and document ownership.
-* Use Firebase Auth custom claims for role-based access.
-* Secure Cloud Function endpoints and validate inputs.
-* Keep AI keys and SMS credentials in `functions.config()` (Firebase environment config), never in client code.
+Issues and pull requests are welcome.
+Open an [issue](https://github.com/Hemkumar247/Rakshak-App/issues) to report bugs or suggest features.
 
 ---
 
-## Testing
+## 🧑‍💻 Built by
 
-* Unit tests for Cloud Functions (use `firebase-functions-test` library).
-* Integration tests with the local Firebase emulator suite.
-* Manual QA on low-end devices to ensure offline UX and image uploads are robust.
+**Hem Kumar** — AI + Full-Stack Developer, Chennai 🇮🇳
 
----
+Building AI products that solve real problems for real people.
 
-## Deployment & CI/CD
-
-* Use GitHub Actions to run tests and deploy Cloud Functions on merge to `main`.
-* Store secrets in GitHub Secrets and use `firebase deploy --token` in the action.
-
-Sample GitHub Action (deploy functions):
-
-```yaml
-name: Deploy Functions
-on:
-  push:
-    branches: [ main ]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: npm ci --prefix functions
-      - run: npx firebase-tools login:ci --token ${{ secrets.FIREBASE_TOKEN }}
-      - run: firebase deploy --only functions,firestore,storage --project ${{ secrets.FIREBASE_PROJECT }}
-```
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-hemkumarvitta-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/hemkumarvitta)
+[![GitHub](https://img.shields.io/badge/GitHub-Hemkumar247-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/Hemkumar247)
+[![Gmail](https://img.shields.io/badge/Email-hemkumarvitta%40gmail.com-D14836?style=flat-square&logo=gmail&logoColor=white)](mailto:hemkumarvitta@gmail.com)
 
 ---
 
-## Monitoring & Analytics
+<div align="center">
 
-* Use Firebase Performance Monitoring and Crashlytics for mobile app performance.
-* Log function errors to Stackdriver / Cloud Logging.
-* Create dashboard in Google Data Studio or Looker Studio for farm-level analytics.
+⭐ **If Rakshak inspired you, leave a star — it helps more farmers get access to better tools.**
 
----
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,14,20&height=100&section=footer"/>
 
-## Cost Optimization
-
-* Use Cloud Functions with conservative memory/time limits and cold-start optimizations.
-* Batch AI calls where possible to reduce API costs.
-* Archive older images to cheaper storage classes or delete per retention policy.
-
----
-
-## Contribution Guide
-
-1. Fork the repository and create a feature branch.
-2. Run tests locally and add unit tests for new logic.
-3. Submit a PR with a detailed description and screenshots if applicable.
-
----
-
-## License
-
-Rakshak is released under the MIT License.
-
----
+</div>
