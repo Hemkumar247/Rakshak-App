@@ -4,7 +4,7 @@ import { useLanguage } from "@/lib/i18n";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 
 // Mock data for government schemes
-const schemes = {
+const schemes: Record<string, any[]> = {
   en: [
     {
       title: "PM Kisan Samman Nidhi",
@@ -79,7 +79,7 @@ export default function SchemesPage() {
         <p className="text-muted-foreground">{t('schemesPageDescription')}</p>
       </div>
       <div className="space-y-6">
-        {currentSchemes.map((scheme) => (
+        {currentSchemes.map((scheme: any) => (
           <Card key={scheme.title} className="shadow-lg border-white/40">
             <CardHeader>
               <CardTitle className="font-headline text-primary">{scheme.title}</CardTitle>

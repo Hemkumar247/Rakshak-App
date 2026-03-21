@@ -1,0 +1,21 @@
+﻿
+> nextn@0.1.0 typecheck
+> tsc --noEmit
+
+src/ai/flows/diagnose-plant-disease.ts(88,47): error TS18047: 'media' is possibly 'null'.
+src/ai/flows/satellite-farm-analysis.ts(82,53): error TS2353: Object literal may only specify known properties, and 'currentDate' does not exist in type '{ language: string; coordinates: string; ndvi: number; }'.
+src/ai/flows/satellite-farm-analysis.ts(97,26): error TS18047: 'imageResult.media' is possibly 'null'.
+src/ai/flows/smart-crop-suggestions.ts(73,7): error TS2353: Object literal may only specify known properties, and 'currentDate' does not exist in type '{ farmLocation: string; language: string; }'.
+src/ai/flows/smart-crop-suggestions.ts(90,28): error TS18047: 'media' is possibly 'null'.
+src/app/agronomic-tips/page.tsx(7,69): error TS2305: Module '"lucide-react"' has no exported member 'Spray'.
+src/app/agronomic-tips/page.tsx(124,37): error TS2345: Argument of type '"newDiagnosis"' is not assignable to parameter of type '"farmLocation" | "message" | "cropName" | "reasoning" | "recommendations" | "name" | "temperature" | "diagnosis" | "treatment" | "prevention" | "rainChance" | "humidity" | "soilAnalysis" | ... 116 more ... | "contactSupportDescription"'.
+src/app/agronomic-tips/page.tsx(191,35): error TS2345: Argument of type '"diagnosisResult"' is not assignable to parameter of type '"farmLocation" | "message" | "cropName" | "reasoning" | "recommendations" | "name" | "temperature" | "diagnosis" | "treatment" | "prevention" | "rainChance" | "humidity" | "soilAnalysis" | ... 116 more ... | "contactSupportDescription"'.
+src/app/community/dm/[chatId]/page.tsx(38,13): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/market-analysis/page.tsx(254,10): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/app/market-analysis/page.tsx(256,11): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/app/satellite-analysis/actions.ts(5,8): error TS2724: '"@/ai/flows/satellite-farm-analysis"' has no exported member named 'SatelliteFarmAnalysisInput'. Did you mean 'satelliteFarmAnalysis'?
+src/app/satellite-analysis/actions.ts(6,8): error TS2724: '"@/ai/flows/satellite-farm-analysis"' has no exported member named 'SatelliteFarmAnalysisOutput'. Did you mean 'satelliteFarmAnalysis'?
+src/app/schemes/page.tsx(73,26): error TS7053: Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ en: { title: string; description: string; eligibility: string; link: string; }[]; hi: { title: string; description: string; eligibility: string; link: string; }[]; ta: { title: string; description: string; eligibility: string; link: string; }[]; }'.
+  Property 'ml' does not exist on type '{ en: { title: string; description: string; eligibility: string; link: string; }[]; hi: { title: string; description: string; eligibility: string; link: string; }[]; ta: { title: string; description: string; eligibility: string; link: string; }[]; }'.
+src/app/schemes/page.tsx(82,30): error TS7006: Parameter 'scheme' implicitly has an 'any' type.

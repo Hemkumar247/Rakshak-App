@@ -1,18 +1,31 @@
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow for providing smart crop suggestions to farmers.
- *
- * The flow takes a farm location as input, determines the current season, and
- * returns crop recommendations suitable for that region and time of year, including a generated image for each.
- *
- * @exports smartCropSuggestions - The main function to trigger the crop suggestion flow.
- * @exports SmartCropSuggestionsInput - The input type for the smartCropSuggestions function.
- * @exports SmartCropSuggestionsOutput - The output type for the smartCropSuggestionsOutput function.
+ * @fileOverview Smart crop suggestions flow with multi-key rotation.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, createAi, getNextKey, withRetry} from '@/ai/genkit';
 import {z} from 'genkit';
+import fs from 'fs';
+import path from 'path';
+
+/** Utility to get crops from the local filesystem at runtime */
+function getAvailableCrops(): string[] {
+  try {
+    const cropsDir = path.join(process.cwd(), 'public', 'images', 'crops');
+    const files = fs.readdirSync(cropsDir);
+    return files
+      .filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg'))
+      .map(f => {
+        const name = f.split('.')[0];
+        // Capitalize for the AI prompt
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      });
+  } catch (error) {
+    console.error('Failed to read crops directory:', error);
+    return ['Wheat', 'Mustard', 'Chickpea', 'Cotton', 'Rice', 'Maize']; // Hard fallback
+  }
+}
 
 const SmartCropSuggestionsInputSchema = z.object({
   farmLocation: z
@@ -25,39 +38,19 @@ export type SmartCropSuggestionsInput = z.infer<typeof SmartCropSuggestionsInput
 const CropRecommendationSchema = z.object({
     cropName: z.string().describe('The name of the suggested crop.'),
     reasoning: z.array(z.string()).describe('A short, crisp list of reasons why this crop is a good choice.'),
-    imageDataUri: z.string().describe("A generated image of the crop, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'.").optional(),
+    imageDataUri: z.string().describe("A generated image of the crop.").optional(),
 });
 
 const SmartCropSuggestionsOutputSchema = z.object({
   recommendations: z
     .array(CropRecommendationSchema)
-    .describe('A list of crop recommendations, with reasoning and a generated image, based on the location and current season.'),
+    .describe('A list of crop recommendations.'),
 });
 export type SmartCropSuggestionsOutput = z.infer<typeof SmartCropSuggestionsOutputSchema>;
 
 export async function smartCropSuggestions(input: SmartCropSuggestionsInput): Promise<SmartCropSuggestionsOutput> {
   return smartCropSuggestionsFlow(input);
 }
-
-const smartCropSuggestionsPrompt = ai.definePrompt({
-  name: 'smartCropSuggestionsPrompt',
-  input: {schema: SmartCropSuggestionsInputSchema},
-  output: {schema: SmartCropSuggestionsOutputSchema},
-  config: {
-    temperature: 0, // Make the output deterministic
-  },
-  prompt: `You are an expert agronomist AI, and your task is to provide seasonal crop recommendations. Today's date is {{currentDate}}.
-
-  Based on the farm's location, analyze the regional climate, typical soil types, and the current season.
-  
-  Recommend a list of the 3 most suitable crops for cultivation at this specific time of year in that location. For each crop, provide a brief, easy-to-understand list of reasons why it is a good choice, considering factors like climate suitability, profitability, and seasonal timing.
-
-  The entire response, including crop names and reasoning, must be in the following language: {{language}}.
-
-  Farm Location: {{{farmLocation}}}
-  
-  Keep the reasoning points very concise and simple for a farmer to understand.`,
-});
 
 const smartCropSuggestionsFlow = ai.defineFlow(
   {
@@ -67,37 +60,52 @@ const smartCropSuggestionsFlow = ai.defineFlow(
   },
   async (input) => {
     const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    
-    const {output} = await smartCropSuggestionsPrompt({
-      ...input,
-      currentDate,
-    });
+    const supportedCrops = getAvailableCrops();
+
+    // Dynamically define the prompt body to include the current filesystem crops
+    const promptBody = `You are an expert agronomist AI, and your task is to provide seasonal crop recommendations. Today's date is ${currentDate}.
+
+  Based on the farm's location, analyze the regional climate, typical soil types, and the current season.
+  
+  Recommend a list of the 3 most suitable crops for cultivation at this specific time of year in that location. 
+  
+  CRITICAL INSTRUCTION: You MUST ONLY recommend crops that exist in this exact list of available database items:
+  ${supportedCrops.join(', ')}
+  
+  For each crop, provide a brief, easy-to-understand list of reasons why it is a good choice, considering factors like climate suitability, profitability, and seasonal timing.
+
+  The entire response, including crop names and reasoning, must be in the following language: ${input.language}.
+
+  Farm Location: ${input.farmLocation}
+  
+  Keep the reasoning points very concise and simple for a farmer to understand.`;
+
+    // Execute generation with the dynamic prompt
+    const {output} = await withRetry(() => ai.generate({
+      prompt: promptBody,
+      output: { schema: SmartCropSuggestionsOutputSchema },
+      config: { temperature: 0 }
+    }));
 
     if (!output?.recommendations) {
       return { recommendations: [] };
     }
 
-    // Generate an image for each recommendation
-    const imagePromises = output.recommendations.map(async (rec) => {
-      try {
-        const {media} = await ai.generate({
-          model: 'googleai/gemini-2.0-flash-preview-image-generation',
-          prompt: `A vibrant, high-quality photo of ${rec.cropName} growing in a field, suitable for an agricultural advisory app.`,
-          config: {
-            responseModalities: ['TEXT', 'IMAGE'],
-          },
-        });
-        rec.imageDataUri = media.url;
-      } catch (e) {
-        console.error(`Failed to generate image for ${rec.cropName}`, e);
-        // Fallback to a placeholder URL if generation fails
-        rec.imageDataUri = `https://placehold.co/600x400.png?text=${rec.cropName.replace(/\s/g, '+')}`;
-      }
-      return rec;
-    });
+    // Map crops directly to the local images we created in public/images/crops
+    for (const rec of output.recommendations) {
+      // Find which local file match this suggestion
+      const englishMatch = supportedCrops.find(c => rec.cropName.toLowerCase().includes(c.toLowerCase()));
+      const imageName = englishMatch ? englishMatch.toLowerCase() : 'wheat';
+      
+      // Check for common extensions
+      const cropsDir = path.join(process.cwd(), 'public', 'images', 'crops');
+      let finalExt = 'jpg';
+      if (fs.existsSync(path.join(cropsDir, `${imageName}.png`))) finalExt = 'png';
+      if (fs.existsSync(path.join(cropsDir, `${imageName}.jpeg`))) finalExt = 'jpeg';
+      
+      rec.imageDataUri = `/images/crops/${imageName}.${finalExt}`;
+    }
 
-    const recommendationsWithImages = await Promise.all(imagePromises);
-
-    return { recommendations: recommendationsWithImages };
+    return { recommendations: output.recommendations };
   }
 );

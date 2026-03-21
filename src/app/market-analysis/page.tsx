@@ -1,7 +1,7 @@
 // src/app/market-analysis/page.tsx
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -251,8 +251,8 @@ function MarketAnalysisContent() {
 
 export default function MarketAnalysisPage() {
     return (
-        <React.Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div>Loading...</div>}>
             <MarketAnalysisContent />
-        </React.Suspense>
+        </Suspense>
     )
 }

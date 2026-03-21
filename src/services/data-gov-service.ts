@@ -33,8 +33,27 @@ const BASE_URL = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a
 
 async function fetchData(params: URLSearchParams) {
     const apiKey = process.env.DATA_GOV_IN_API_KEY;
-    if (!apiKey) {
-      throw new Error("data.gov.in API key is not configured.");
+    if (!apiKey || apiKey === "your_data_gov_in_api_key_here") {
+      console.warn("Using mock data.gov.in data because API key is not configured.");
+      if (params.get('fields') === 'state') return [{ state: "Maharashtra" }, { state: "Punjab" }];
+      if (params.get('fields') === 'market') return [{ market: "Pune" }, { market: "Mumbai" }, { market: "Ludhiana" }];
+      
+      const mockedDate = new Date();
+      return Array.from({length: 10}).map((_, i) => {
+          const d = new Date(mockedDate);
+          d.setDate(d.getDate() - i);
+          return {
+              state: params.get('filters[state]') || "Mock State",
+              district: "Mock District",
+              market: params.get('filters[market]') || "Mock Market",
+              commodity: params.get('filters[commodity]') || "Mock Commodity",
+              variety: "Common",
+              arrival_date: d.toLocaleDateString('en-GB'), // DD/MM/YYYY
+              min_price: (2000 + Math.random() * 200).toFixed(2),
+              max_price: (2500 + Math.random() * 200).toFixed(2),
+              modal_price: (2300 + Math.random() * 200).toFixed(2)
+          };
+      });
     }
     params.append('api-key', apiKey);
     params.append('format', 'json');

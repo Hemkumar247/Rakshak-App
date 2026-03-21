@@ -1,13 +1,10 @@
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow for providing a simulated satellite farm analysis.
- *
- * The flow takes geographic coordinates, generates a plausible NDVI score,
- * creates a descriptive analysis, and generates a representative heatmap image.
+ * @fileOverview Satellite farm analysis flow with multi-key rotation.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, createAi, getNextKey, withRetry} from '@/ai/genkit';
 import {z} from 'genkit';
 import {
   SatelliteFarmAnalysisInputSchema,
@@ -16,13 +13,12 @@ import {
   type SatelliteFarmAnalysisOutput
 } from '@/ai/schemas/satellite-analysis-schema';
 
-// Simple hashing function to create a deterministic "random" number from a string.
 const deterministicHash = (str: string) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
         hash = ((hash << 5) - hash) + char;
-        hash |= 0; // Convert to 32bit integer
+        hash |= 0;
     }
     return Math.abs(hash);
 };
@@ -36,16 +32,15 @@ const satelliteFarmAnalysisPrompt = ai.definePrompt({
   input: { schema: z.object({ 
     coordinates: SatelliteFarmAnalysisInputSchema.shape.coordinates,
     language: SatelliteFarmAnalysisInputSchema.shape.language,
-    ndvi: z.number() 
+    ndvi: z.number(),
+    currentDate: z.string()
   }) },
   output: { schema: z.object({
     healthDescription: SatelliteFarmAnalysisOutputSchema.shape.healthDescription,
     soilAnalysis: SatelliteFarmAnalysisOutputSchema.shape.soilAnalysis,
     recommendations: SatelliteFarmAnalysisOutputSchema.shape.recommendations,
   }) },
-  config: {
-    temperature: 0.2, 
-  },
+  config: { temperature: 0.2 },
   prompt: `You are an expert agronomist and remote sensing analyst. Today's date is {{currentDate}}.
 
   A farmer has provided the following coordinates for their farm: {{coordinates}}.
@@ -70,39 +65,36 @@ const satelliteFarmAnalysisFlow = ai.defineFlow(
   },
   async (input) => {
     const { coordinates } = input;
-
-    // Generate a deterministic NDVI score from coordinates
     const hash = deterministicHash(coordinates);
-    const ndvi = parseFloat((((hash % 600) / 1000) + 0.2).toFixed(3)); // Consistent value between 0.2 and 0.8
-
-    // Generate the textual analysis and the image in parallel
+    const ndvi = parseFloat((((hash % 600) / 1000) + 0.2).toFixed(3));
     const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-    const [analysisResult, imageResult] = await Promise.all([
-      satelliteFarmAnalysisPrompt({ ...input, ndvi, currentDate }),
-      ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
-        prompt: `Generate a satellite NDVI (Normalized Difference Vegetation Index) heatmap of a farm field at coordinates ${coordinates}. The image should be a top-down aerial view. Use a color scale where vibrant green indicates healthy vegetation and yellow/red indicates stressed or bare areas. The overall health should look consistent with an NDVI score of approximately ${ndvi.toFixed(2)}. Do not include any text or labels on the image.`,
-        config: {
-          responseModalities: ['TEXT', 'IMAGE'],
-        },
-      })
-    ]);
+    // Text analysis with retry
+    const analysisResult = await withRetry(() => satelliteFarmAnalysisPrompt({ ...input, ndvi, currentDate }));
     
     const output = analysisResult.output;
     if (!output) {
       throw new Error("Failed to get a valid analysis from the AI model.");
     }
+
+    // Use pre-selected high-quality satellite NDVI-like images to save API costs
+    // and provide immediate, realistic results for the user.
+    const satelliteImages = [
+      '/images/satellite/satellite%20img%201.jpg',
+      '/images/satellite/satellite%20img%202.jpg',
+      '/images/satellite/satellite%20img%203.jpg',
+      '/images/satellite/satellite%20img%204.jpg',
+      '/images/satellite/satellite%20img%205.jpg'
+    ];
     
-    const imageDataUri = imageResult.media.url;
-    if (!imageDataUri) {
-      throw new Error("Failed to generate a satellite image.");
-    }
+    // Cycle through images deterministically based on the coordinate hash
+    const imageIndex = hash % satelliteImages.length;
+    let imageDataUri: string | undefined = satelliteImages[imageIndex];
 
     return {
       ...output,
       ndvi,
-      imageDataUri,
+      imageDataUri: imageDataUri || `https://placehold.co/800x600.png?text=Satellite+NDVI+${ndvi.toFixed(2)}`,
     };
   }
 );

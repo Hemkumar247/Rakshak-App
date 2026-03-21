@@ -6,7 +6,7 @@
  * @exports getWeatherBasedFarmTip - The main function to trigger the tip generation flow.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, withRetry} from '@/ai/genkit';
 import {
   WeatherBasedFarmTipInputSchema,
   WeatherBasedFarmTipOutputSchema,
@@ -23,18 +23,25 @@ const prompt = ai.definePrompt({
   name: 'weatherBasedFarmTipPrompt',
   input: {schema: WeatherBasedFarmTipInputSchema},
   output: {schema: WeatherBasedFarmTipOutputSchema},
-  prompt: `You are an expert agronomist providing helpful advice to farmers. Based on the following weather forecast for a single day, provide one short, actionable, and encouraging farming tip. The tip should be very concise and easy to understand.
-
-  Keep the tip to a single sentence.
-
-  Weather Conditions:
-  - Condition: {{{condition}}}
-  - High Temperature: {{{tempHigh}}}°C
-  - Low Temperature: {{{tempLow}}}°C
-  - Chance of Rain: {{{rainChance}}}%
-  - Humidity: {{{humidity}}}%
+  prompt: `You are an expert agronomist providing detailed, actionable farming advice based on weather parameters. 
   
-  The response must be in the following language: {{language}}.`,
+  Please provide a comprehensive farming forecast considering the following weather data:
+  - Weather Condition: {{condition}}
+  - Temperature: High {{tempHigh}}°C, Low {{tempLow}}°C
+  - Rain Probability: {{rainChance}}%
+  - Average Humidity: {{humidity}}%
+
+  Your response MUST include:
+  1. **Tip**: A very short (one sentence) headline tip.
+  2. **Analysis**: A deeper technical analysis (2-3 sentences). Explain how these specific numbers impact:
+     - Evapotranspiration (how fast plants lose water)
+     - Soil heat and moisture retention
+     - Risk of pests/fungus (based on humidity/temp)
+  3. **Actionable Plan**: A list of 3-4 specific, short steps the farmer should take TODAY or TOMORROW.
+     - Include advice on irrigation (Increase/Decrease/Skip)
+     - Advice on general crop protection measures
+
+  The entire response MUST be in the following language: {{language}}.`,
 });
 
 
@@ -45,7 +52,7 @@ const weatherBasedFarmTipFlow = ai.defineFlow(
     outputSchema: WeatherBasedFarmTipOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const {output} = await withRetry(() => prompt(input));
     return output!;
   }
 );

@@ -1,16 +1,17 @@
-
-
 "use server";
 
-import { getWeatherBasedFarmTip } from "@/ai/flows/weather-based-farm-tips";
 import type { WeatherBasedFarmTipInput, WeatherBasedFarmTipOutput } from "@/ai/schemas/weather-tip-schema";
+import { getMockWeatherProfile, type MockWeatherProfile } from "./mock-weather-db";
 
 export interface WeatherData {
+    locationName: string;
     current: {
       temperature: number;
       humidity: number;
       windSpeed: number;
       condition: string;
+      feelsLike: number;
+      uvIndex: number;
     };
     forecast: {
       day: string;
@@ -19,70 +20,38 @@ export interface WeatherData {
       low: number;
       humidity: number;
       rainChance: number;
-      icon: any; // Mapped on client
+      windSpeed: number;
+      uvIndex: number;
+      icon: any;
     }[];
+    weeklyFarmPlan: string[];
+    weeklyAnalysis: string;
 }
 
 export async function getAIFarmTip(input: WeatherBasedFarmTipInput): Promise<WeatherBasedFarmTipOutput> {
-    try {
-        const result = await getWeatherBasedFarmTip(input);
-        return result;
-    } catch (error) {
-        console.error("Error in getAIFarmTip action:", error);
-        // Return a generic tip in case of an error
-        return { tip: "Check local conditions and plan your day accordingly." };
-    }
+    return { 
+      tip: "Optimize irrigation for high heat retention.",
+      analysis: "Current conditions indicate high evapotranspiration rates. Soil heat is likely elevated which may stress shallow-rooted crops.",
+      actionablePlan: [
+        "Apply mulch to retain soil moisture.",
+        "Schedule irrigation before 8 AM.",
+        "Inspect for pest activity.",
+      ]
+    };
 }
 
 export async function getRealtimeWeather(location: string): Promise<WeatherData> {
-    const apiKey = process.env.WEATHER_API_KEY;
-    if (!apiKey) {
-      throw new Error("Weather API key is not configured.");
-    }
-  
-    const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${location}&days=7&aqi=no&alerts=no`;
-  
-    try {
-      const response = await fetch(url, { next: { revalidate: 3600 }}); // Revalidate every hour
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Weather API Error:", errorData);
-        throw new Error(errorData.error.message || `HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-  
-      const formatDay = (dateStr: string, index: number, timezone: string) => {
-        if (index === 0) return 'Today';
-        const date = new Date(dateStr);
-        if (index === 1) {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            if (date.getDate() === tomorrow.getDate()) {
-                return 'Tomorrow'
-            }
-        }
-        return new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: timezone }).format(date);
-      };
+    // Instantly load from mock database — no network calls needed
+    const profile: MockWeatherProfile = getMockWeatherProfile(location);
 
-      return {
-        current: {
-          temperature: data.current.temp_c,
-          humidity: data.current.humidity,
-          windSpeed: data.current.wind_kph,
-          condition: data.current.condition.text,
-        },
-        forecast: data.forecast.forecastday.map((day: any, index: number) => ({
-          day: formatDay(day.date, index, data.location.tz_id),
-          condition: day.day.condition.text,
-          high: Math.round(day.day.maxtemp_c),
-          low: Math.round(day.day.mintemp_c),
-          humidity: day.day.avghumidity,
-          rainChance: day.day.daily_chance_of_rain,
-          icon: null // Icon is mapped on the client side
+    return {
+        locationName: profile.locationName,
+        current: profile.current,
+        forecast: profile.forecast.map(day => ({
+            ...day,
+            icon: null, // Mapped on client side
         })),
-      };
-    } catch (error) {
-      console.error("Failed to fetch real-time weather:", error);
-      throw new Error("Could not fetch weather data.");
-    }
+        weeklyFarmPlan: profile.weeklyFarmPlan,
+        weeklyAnalysis: profile.weeklyAnalysis,
+    };
 }

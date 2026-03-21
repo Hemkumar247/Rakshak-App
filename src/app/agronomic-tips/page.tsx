@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Upload, Loader2, Leaf, HeartPulse, ShieldCheck, Bug, Pill, Spray, AlertCircle, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Upload, Loader2, Leaf, HeartPulse, ShieldCheck, Bug, Pill, AlertCircle, Sparkles, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 
 import { Button } from "@/components/ui/button";
@@ -121,7 +121,7 @@ export default function PlantDiagnosisPage() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 font-headline">
-                    <Sparkles /> {t('newDiagnosis')}
+                    <Sparkles /> {t('newDiagnosis' as any)}
                 </CardTitle>
             </CardHeader>
           <CardContent>
@@ -188,7 +188,7 @@ export default function PlantDiagnosisPage() {
           <Card className="min-h-[400px]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-headline">
-                <HeartPulse /> {t('diagnosisResult')}
+                <HeartPulse /> {t('diagnosisResult' as any)}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -236,12 +236,12 @@ export default function PlantDiagnosisPage() {
                                 </h3>
                                 <p className="text-sm text-muted-foreground mb-2">Does your plant look like this? This helps confirm the diagnosis.</p>
                                 <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                                    <Image 
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img 
                                         src={diagnosis.diseaseImageUrl} 
                                         alt={`Reference image for ${diagnosis.diseaseName}`} 
-                                        layout="fill" 
-                                        objectFit="cover"
-                                        unoptimized={diagnosis.diseaseImageUrl.startsWith('data:image')}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                     />
                                 </div>
                             </div>

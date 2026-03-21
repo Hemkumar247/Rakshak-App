@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/language-switcher';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Logo } from './logo';
 import { useLanguage } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -30,7 +31,6 @@ export function Header() {
     { href: '/agronomic-tips', label: t('plantDiagnosis'), icon: HeartPulse },
     { href: '/weather', label: t('weather'), icon: Sun },
     { href: '/satellite-analysis', label: t('satelliteAnalysis'), icon: Satellite },
-    { href: '/community', label: t('community'), icon: MessageSquare },
   ];
 
   return (
@@ -55,6 +55,7 @@ export function Header() {
           ))}
         </ul>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <LanguageSwitcher />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

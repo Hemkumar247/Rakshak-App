@@ -71,7 +71,7 @@ export function WeatherCard() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [location, setLocation] = useState('Delhi');
+  const [location, setLocation] = useState('Chennai');
 
   useEffect(() => {
     const fetchWeatherForLocation = async (loc: string) => {
@@ -83,30 +83,13 @@ export function WeatherCard() {
         } catch (err) {
             console.error("Failed to fetch weather data for card:", err);
             setError("Could not load weather.");
-            toast({
-                variant: "destructive",
-                title: "Weather Error",
-                description: "Could not fetch weather data for the card."
-            });
         } finally {
             setIsLoading(false);
         }
     };
-    
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          const loc = `${latitude},${longitude}`;
-          setLocation(loc);
-          fetchWeatherForLocation(loc);
-        },
-        (error) => {
-          console.warn("Geolocation denied. Falling back to default.");
-          fetchWeatherForLocation('Delhi'); // Fallback location
-        },
-        { timeout: 5000 }
-    );
-  }, [toast]);
+    // Load instantly from mock DB — no geolocation needed
+    fetchWeatherForLocation('Chennai');
+  }, []);
 
 
   const renderContent = () => {

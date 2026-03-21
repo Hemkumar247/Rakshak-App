@@ -7,66 +7,21 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLanguage } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Thermometer, Droplets, Wind, Sun, Cloud, CloudRain, CloudSun, CloudDrizzle, Sparkles, Loader2, MapPin, LocateFixed, CloudLightning, CloudSnow, SunMoon, Moon, CloudFog } from 'lucide-react';
+import { Thermometer, Droplets, Wind, Sun, Cloud, CloudRain, CloudSun, CloudDrizzle, Sparkles, Loader2, MapPin, LocateFixed, CloudLightning, CloudSnow, Moon, CloudFog, ShieldCheck, Leaf } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import { getAIFarmTip, getRealtimeWeather, type WeatherData } from './actions';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getRealtimeWeather, type WeatherData } from './actions';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 const conditionToIconMap: { [key: string]: React.ElementType } = {
-  'Sunny': Sun,
-  'Clear': Moon,
-  'Partly cloudy': CloudSun,
-  'Cloudy': Cloud,
-  'Overcast': Cloud,
-  'Mist': CloudFog,
-  'Patchy rain possible': CloudDrizzle,
-  'Patchy snow possible': CloudSnow,
-  'Patchy sleet possible': CloudDrizzle,
-  'Patchy freezing drizzle possible': CloudDrizzle,
-  'Thundery outbreaks possible': CloudLightning,
-  'Blowing snow': CloudSnow,
-  'Blizzard': CloudSnow,
-  'Fog': CloudFog,
-  'Freezing fog': CloudFog,
-  'Patchy light drizzle': CloudDrizzle,
-  'Light drizzle': CloudDrizzle,
-  'Freezing drizzle': CloudDrizzle,
-  'Heavy freezing drizzle': CloudDrizzle,
-  'Patchy light rain': CloudRain,
-  'Light rain': CloudRain,
-  'Moderate rain at times': CloudRain,
-  'Moderate rain': CloudRain,
-  'Heavy rain at times': CloudRain,
-  'Heavy rain': CloudRain,
-  'Light freezing rain': CloudRain,
-  'Moderate or heavy freezing rain': CloudRain,
-  'Light sleet': CloudDrizzle,
-  'Moderate or heavy sleet': CloudDrizzle,
-  'Patchy light snow': CloudSnow,
-  'Light snow': CloudSnow,
-  'Patchy moderate snow': CloudSnow,
-  'Moderate snow': CloudSnow,
-  'Patchy heavy snow': CloudSnow,
-  'Heavy snow': CloudSnow,
-  'Ice pellets': CloudSnow,
-  'Light rain shower': CloudRain,
-  'Moderate or heavy rain shower': CloudRain,
-  'Torrential rain shower': CloudRain,
-  'Light sleet showers': CloudDrizzle,
-  'Moderate or heavy sleet showers': CloudDrizzle,
-  'Light snow showers': CloudSnow,
-  'Moderate or heavy snow showers': CloudSnow,
-  'Light showers of ice pellets': CloudSnow,
-  'Moderate or heavy showers of ice pellets': CloudSnow,
-  'Patchy light rain with thunder': CloudLightning,
-  'Moderate or heavy rain with thunder': CloudLightning,
-  'Patchy light snow with thunder': CloudLightning,
-  'Moderate or heavy snow with thunder': CloudLightning,
+  'Sunny': Sun, 'Clear': Moon, 'Partly Cloudy': CloudSun, 'Partly cloudy': CloudSun,
+  'Cloudy': Cloud, 'Overcast': Cloud, 'Mist': CloudFog, 'Fog': CloudFog,
+  'Light Rain': CloudRain, 'Light rain': CloudRain, 'Moderate rain': CloudRain,
+  'Heavy rain': CloudRain, 'Drizzle': CloudDrizzle, 'Light drizzle': CloudDrizzle,
+  'Thundery outbreaks possible': CloudLightning, 'Light snow': CloudSnow,
+  'Mostly Sunny': Sun,
 };
 
 const formSchema = z.object({
@@ -74,18 +29,14 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-type ForecastWithTip = WeatherData['forecast'][0] & { tip?: string };
 
 export default function WeatherPage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const [currentWeather, setCurrentWeather] = useState<WeatherData['current'] | null>(null);
-  const [forecastsWithTips, setForecastsWithTips] = useState<ForecastWithTip[]>([]);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [location, setLocation] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -94,46 +45,22 @@ export default function WeatherPage() {
 
   const fetchWeather = async (loc: string) => {
     setIsLoading(true);
-    setForecastsWithTips([]);
-    setCurrentWeather(null);
-    setLocation(loc);
     setError(null);
-
     try {
-      const weatherData = await getRealtimeWeather(loc);
-      setCurrentWeather(weatherData.current);
-
-      const tipsPromises = weatherData.forecast.map(day =>
-        getAIFarmTip({
-          condition: day.condition,
-          tempHigh: day.high,
-          tempLow: day.low,
-          rainChance: day.rainChance,
-          humidity: day.humidity,
-          language: language,
-        })
-      );
-      
-      const tipsResults = await Promise.all(tipsPromises);
-      const updatedForecasts = weatherData.forecast.map((day, index) => ({
-        ...day,
-        icon: conditionToIconMap[day.condition] || Sun,
-        tip: tipsResults[index].tip,
-      }));
-      setForecastsWithTips(updatedForecasts);
-
+      const data = await getRealtimeWeather(loc);
+      setWeatherData(data);
     } catch (err: any) {
-      console.error("Failed to fetch weather data or AI tips", err);
-      setError(err.message || "Failed to fetch weather data. Please check the location and try again.");
-      toast({
-        variant: 'destructive',
-        title: 'Error Fetching Weather',
-        description: err.message || "Could not fetch weather data for the specified location.",
-      });
+      setError(err.message || "Failed to fetch weather data.");
+      toast({ variant: 'destructive', title: 'Error', description: err.message });
     } finally {
       setIsLoading(false);
     }
-  }
+  };
+
+  // Auto-load default data on mount — instant, from local DB
+  useEffect(() => {
+    fetchWeather('Chennai');
+  }, []);
 
   async function onSubmit(values: FormValues) {
     await fetchWeather(values.location);
@@ -141,70 +68,34 @@ export default function WeatherPage() {
   
   async function handleGetLocation() {
     if (!navigator.geolocation) {
-      toast({
-        variant: "destructive",
-        title: "Geolocation Not Supported",
-        description: "Your browser does not support geolocation.",
-      });
+      toast({ variant: "destructive", title: "Not Supported", description: "Your browser does not support geolocation." });
       return;
     }
-
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`);
-          if (!response.ok) throw new Error("Failed to fetch address");
           const data = await response.json();
-          const locationString = data.display_name || `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
-          form.setValue('location', locationString, { shouldValidate: true });
-          toast({
-            title: "Location Found",
-            description: "Your location has been filled in.",
-          });
-          await fetchWeather(locationString);
-        } catch (e) {
-            console.error("Reverse geocoding failed", e);
-            const locationString = `Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}`;
-            form.setValue('location', locationString, { shouldValidate: true });
-            toast({
-                variant: "destructive",
-                title: "Could not fetch address",
-                description: "Using coordinates instead.",
-            });
-            await fetchWeather(locationString);
-        } finally {
-            setIsLocating(false);
-        }
+          const address = data.address || {};
+          const city = address.city || address.town || address.village || address.city_district || 'Chennai';
+          form.setValue('location', city, { shouldValidate: true });
+          await fetchWeather(city);
+        } catch {
+          form.setValue('location', 'Chennai', { shouldValidate: true });
+          await fetchWeather('Chennai');
+        } finally { setIsLocating(false); }
       },
-      (error) => {
-        setIsLocating(false);
-        let description = "An unknown error occurred.";
-        if (error.code === error.PERMISSION_DENIED) {
-            description = "You denied the request for Geolocation.";
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-            description = "Location information is unavailable.";
-        } else if (error.code === error.TIMEOUT) {
-            description = "The request to get user location timed out.";
-        }
-        toast({
-          variant: "destructive",
-          title: "Error Getting Location",
-          description,
-        });
-      }
+      () => { setIsLocating(false); fetchWeather('Chennai'); },
+      { timeout: 5000 }
     );
   }
 
-  // Re-fetch tips when language changes
-  useEffect(() => {
-    if (location) {
-      fetchWeather(location);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [language]);
-
+  const getConditionIcon = (condition: string) => {
+    const Icon = conditionToIconMap[condition] || Sun;
+    return <Icon className="h-5 w-5 text-primary" />;
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -213,6 +104,7 @@ export default function WeatherPage() {
         <p className="text-muted-foreground">{t('weatherForecastDescription')}</p>
       </div>
 
+      {/* Location Input */}
       <Card className="shadow-lg border-white/40">
         <CardHeader>
           <CardTitle className="font-headline">{t('farmLocation')}</CardTitle>
@@ -221,25 +113,21 @@ export default function WeatherPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row items-center gap-2">
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormLabel className="sr-only">Location</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                          <Input placeholder={t('farmLocationPlaceholder')} {...field} className="pl-10" />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormField control={form.control} name="location" render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel className="sr-only">Location</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input placeholder={t('farmLocationPlaceholder')} {...field} className="pl-10" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
                 <Button type="button" variant="outline" onClick={handleGetLocation} disabled={isLocating || isLoading} className="w-full sm:w-auto shrink-0">
-                    {isLocating ? <Loader2 className="h-5 w-5 animate-spin" /> : <LocateFixed className="h-5 w-5" />}
-                    <span className="ml-2 sm:hidden">Use My Location</span>
+                  {isLocating ? <Loader2 className="h-5 w-5 animate-spin" /> : <LocateFixed className="h-5 w-5" />}
+                  <span className="ml-2 sm:hidden">Use My Location</span>
                 </Button>
               </div>
               <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
@@ -250,140 +138,166 @@ export default function WeatherPage() {
           </Form>
         </CardContent>
       </Card>
-      
-      {isLoading && (
-         <div className="space-y-6">
-            <Card className="shadow-lg border-white/40">
-              <CardHeader>
-                  <Skeleton className="h-7 w-3/4" />
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                  <Skeleton className="h-10 w-32 mx-auto" />
-                  <Skeleton className="h-10 w-32 mx-auto" />
-                  <Skeleton className="h-10 w-32 mx-auto" />
-                </div>
-              </CardContent>
-            </Card>
-            <div>
-              <Skeleton className="h-7 w-1/2 mb-4" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {Array.from({ length: 7 }).map((_, i) => (
-                    <Card key={i} className="shadow-lg border-white/40 p-4 space-y-3">
-                        <Skeleton className="h-5 w-24" />
-                        <Skeleton className="h-4 w-32" />
-                        <div className="flex justify-between items-center">
-                            <Skeleton className="h-10 w-10 rounded-full" />
-                            <Skeleton className="h-6 w-20" />
-                        </div>
-                        <Separator />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-full" />
-                        <Separator />
-                         <div className="flex items-center gap-2">
-                            <Skeleton className="h-4 w-4 rounded-full" />
-                            <Skeleton className="h-4 w-48" />
-                        </div>
-                    </Card>
-                ))}
-              </div>
-            </div>
-         </div>
-      )}
 
-      {!isLoading && location && !error && (
+      {/* Weather Data Display */}
+      {weatherData && !isLoading && (
         <>
-        <Card className="shadow-lg border-white/40">
+          {/* Current Conditions */}
+          <Card className="shadow-lg border-white/40">
             <CardHeader>
-                <CardTitle className="font-headline">{t('currentConditions')} in <span className="text-primary">{location}</span></CardTitle>
+              <CardTitle className="font-headline">
+                {t('currentConditions')} in <span className="text-primary">{weatherData.locationName}</span>
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {currentWeather && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    <div className="flex items-center justify-center gap-3">
-                    <Thermometer className="h-7 w-7 text-destructive" />
-                    <div>
-                        <p className="text-muted-foreground text-sm">{t('temperature')}</p>
-                        <p className="font-bold text-lg">{currentWeather.temperature}°C</p>
-                    </div>
-                    </div>
-                    <div className="flex items-center justify-center gap-3">
-                    <Droplets className="h-7 w-7 text-blue-500" />
-                    <div>
-                        <p className="text-muted-foreground text-sm">{t('humidity')}</p>
-                        <p className="font-bold text-lg">{currentWeather.humidity}%</p>
-                    </div>
-                    </div>
-                    <div className="flex items-center justify-center gap-3">
-                    <Wind className="h-7 w-7 text-gray-500" />
-                    <div>
-                        <p className="text-muted-foreground text-sm">{t('windSpeed')}</p>
-                        <p className="font-bold text-lg">{currentWeather.windSpeed} kph</p>
-                    </div>
-                    </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 text-center">
+                <div className="flex flex-col items-center gap-1">
+                  <Thermometer className="h-7 w-7 text-destructive" />
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider">{t('temperature')}</p>
+                  <p className="font-bold text-2xl">{weatherData.current.temperature}°C</p>
+                  <p className="text-xs text-muted-foreground">Feels {weatherData.current.feelsLike}°C</p>
                 </div>
-              )}
+                <div className="flex flex-col items-center gap-1">
+                  <Droplets className="h-7 w-7 text-blue-500" />
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider">{t('humidity')}</p>
+                  <p className="font-bold text-2xl">{weatherData.current.humidity}%</p>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <Wind className="h-7 w-7 text-gray-500" />
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider">{t('windSpeed')}</p>
+                  <p className="font-bold text-2xl">{weatherData.current.windSpeed} kph</p>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  {getConditionIcon(weatherData.current.condition)}
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider">Condition</p>
+                  <p className="font-bold text-lg">{weatherData.current.condition}</p>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <Sun className="h-7 w-7 text-yellow-500" />
+                  <p className="text-muted-foreground text-xs uppercase tracking-wider">UV Index</p>
+                  <p className="font-bold text-2xl">{weatherData.current.uvIndex}</p>
+                  <p className="text-xs text-muted-foreground">{weatherData.current.uvIndex >= 8 ? 'Very High' : weatherData.current.uvIndex >= 6 ? 'High' : 'Moderate'}</p>
+                </div>
+              </div>
             </CardContent>
-        </Card>
-      
-        <div>
-            <h2 className="text-xl font-headline font-semibold mb-4">{t('sevenDayForecast')}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {forecastsWithTips.map((day) => (
-                    <Card key={day.day} className="shadow-lg border-white/40 p-4 flex flex-col">
-                    <div>
-                        <h3 className="font-bold font-headline">{day.day}</h3>
-                        <p className="text-sm text-muted-foreground">{day.condition}</p>
+          </Card>
+
+          {/* 7-Day Forecast Table */}
+          <Card className="shadow-lg border-white/40">
+            <CardHeader>
+              <CardTitle className="font-headline">{t('sevenDayForecast')}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-primary/5">
+                      <th className="text-left p-4 font-semibold text-muted-foreground uppercase tracking-wider text-xs">Day</th>
+                      <th className="text-center p-4 font-semibold text-muted-foreground uppercase tracking-wider text-xs">Condition</th>
+                      <th className="text-center p-4 font-semibold text-muted-foreground uppercase tracking-wider text-xs">High</th>
+                      <th className="text-center p-4 font-semibold text-muted-foreground uppercase tracking-wider text-xs">Low</th>
+                      <th className="text-center p-4 font-semibold text-muted-foreground uppercase tracking-wider text-xs">Humidity</th>
+                      <th className="text-center p-4 font-semibold text-muted-foreground uppercase tracking-wider text-xs">Rain %</th>
+                      <th className="text-center p-4 font-semibold text-muted-foreground uppercase tracking-wider text-xs">Wind</th>
+                      <th className="text-center p-4 font-semibold text-muted-foreground uppercase tracking-wider text-xs">UV</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {weatherData.forecast.map((day, i) => (
+                      <tr key={day.day} className={`border-b border-white/5 transition-colors hover:bg-primary/5 ${i === 0 ? 'bg-primary/10 font-semibold' : ''}`}>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            {getConditionIcon(day.condition)}
+                            <span className="font-medium">{day.day}</span>
+                          </div>
+                        </td>
+                        <td className="text-center p-4 text-muted-foreground">{day.condition}</td>
+                        <td className="text-center p-4 font-bold text-destructive">{day.high}°C</td>
+                        <td className="text-center p-4 font-bold text-blue-400">{day.low}°C</td>
+                        <td className="text-center p-4">{day.humidity}%</td>
+                        <td className="text-center p-4">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            day.rainChance >= 50 ? 'bg-blue-500/20 text-blue-400' : 
+                            day.rainChance >= 20 ? 'bg-yellow-500/20 text-yellow-400' : 
+                            'bg-green-500/20 text-green-400'
+                          }`}>
+                            {day.rainChance}%
+                          </span>
+                        </td>
+                        <td className="text-center p-4">{day.windSpeed} kph</td>
+                        <td className="text-center p-4">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            day.uvIndex >= 8 ? 'bg-red-500/20 text-red-400' : 
+                            day.uvIndex >= 6 ? 'bg-orange-500/20 text-orange-400' : 
+                            'bg-green-500/20 text-green-400'
+                          }`}>
+                            {day.uvIndex}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Weekly Farm Plan — single 3-step plan */}
+          <Card className="shadow-lg border-white/40">
+            <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <Leaf className="h-5 w-5 text-primary" />
+                Weekly Agronomist Plan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Analysis Summary */}
+              <div className="bg-primary/5 rounded-xl p-5 border border-primary/10">
+                <div className="flex items-start gap-3">
+                  <Sparkles className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                  <p className="text-sm text-foreground/80 leading-relaxed italic">
+                    {weatherData.weeklyAnalysis}
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* 3-Step Action Plan */}
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" /> Your 3-Step Action Plan for This Week
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {weatherData.weeklyFarmPlan.map((step, i) => (
+                    <div key={i} className="bg-secondary/20 rounded-xl p-5 flex gap-4 items-start">
+                      <div className="shrink-0 h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                        <span className="font-bold text-primary text-sm">{i + 1}</span>
+                      </div>
+                      <p className="text-sm text-foreground/90 leading-relaxed">{step}</p>
                     </div>
-                    <div className="my-3 flex justify-between items-center">
-                        <day.icon className="h-10 w-10 text-accent" />
-                        <p className="text-2xl font-bold">{day.high}°<span className="text-muted-foreground">/{day.low}°</span></p>
-                    </div>
-                    <Separator />
-                    <div className="text-sm space-y-2 mt-3">
-                        <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('humidity')}</span>
-                        <span className="font-semibold">{day.humidity}%</span>
-                        </div>
-                        <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('rainChance')}</span>
-                        <span className="font-semibold">{day.rainChance}%</span>
-                        </div>
-                    </div>
-                    <div className="flex-grow"/>
-                    <Separator className="my-3" />
-                    <Alert className="mt-auto bg-primary/10 border-primary/30 text-primary-dark">
-                        <Sparkles className="h-4 w-4 text-primary" />
-                        <AlertDescription className="text-primary/90 font-medium">
-                        {day.tip || 'Plan your activities accordingly.'}
-                        </AlertDescription>
-                    </Alert>
-                    </Card>
-                ))
-            }
-            </div>
-        </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </>
       )}
-      {!location && !isLoading && (
-        <Card className="shadow-lg border-white/40 flex flex-col items-center justify-center text-center py-16">
-            <CardHeader>
-                <CardTitle className="font-headline text-2xl">See Your Farm's Forecast</CardTitle>
-            </CardHeader>
-            <CardContent>Enter a location or use your current one to get started.</CardContent>
-        </Card>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Loading forecast...</span>
+        </div>
       )}
 
+      {/* Error State */}
       {error && !isLoading && (
-        <Card className="shadow-lg border-destructive/50 flex flex-col items-center justify-center text-center py-16">
-            <CardHeader>
-                <CardTitle className="font-headline text-2xl text-destructive">Could not load weather</CardTitle>
-            </CardHeader>
-            <CardContent className="text-destructive/80">{error}</CardContent>
+        <Card className="shadow-lg border-destructive/50 text-center py-12">
+          <CardContent className="text-destructive">{error}</CardContent>
         </Card>
       )}
     </div>
   );
 }
-
-    

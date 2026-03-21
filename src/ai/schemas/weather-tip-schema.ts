@@ -15,5 +15,7 @@ export type WeatherBasedFarmTipInput = z.infer<typeof WeatherBasedFarmTipInputSc
 
 export const WeatherBasedFarmTipOutputSchema = z.object({
   tip: z.string().describe('A short, actionable farming tip based on the weather conditions.'),
+  analysis: z.string().describe('Detailed agronomist analysis of how the weather affects crops and soil.'),
+  actionablePlan: z.array(z.string()).describe('A bulleted list of 3-4 specific steps for the farmer.'),
 });
 export type WeatherBasedFarmTipOutput = z.infer<typeof WeatherBasedFarmTipOutputSchema>;

@@ -83,6 +83,8 @@ export default function SatelliteAnalysisPage() {
                         objectFit="cover"
                         unoptimized={analysisResult?.imageDataUri?.startsWith('data:image')}
                         data-ai-hint="satellite farm"
+                        priority={true}
+                        sizes="(max-width: 768px) 100vw, 50vw"
                     />
                 </div>
             </TabsContent>
