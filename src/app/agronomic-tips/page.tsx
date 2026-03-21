@@ -69,11 +69,40 @@ export default function PlantDiagnosisPage() {
     });
   };
 
+  /**
+   * Compress an image to max 800x800 JPEG at 70% quality.
+   * Reduces typical 3MB phone photos to ~100-150KB.
+   */
+  const compressImage = (dataUri: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          const ratio = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = () => resolve(dataUri); // Fallback to original if compression fails
+      img.src = dataUri;
+    });
+  };
+
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     setDiagnosis(null);
     try {
-        const photoDataUri = await toDataUri(values.photo);
+        const rawDataUri = await toDataUri(values.photo);
+        const photoDataUri = await compressImage(rawDataUri);
+        console.log(`[Diagnosis] Image compressed: ${Math.round(rawDataUri.length / 1024)}KB → ${Math.round(photoDataUri.length / 1024)}KB`);
         const result = await getPlantDiagnosis({ 
             photoDataUri, 
             userDescription: values.userDescription || "", 
@@ -228,25 +257,6 @@ export default function PlantDiagnosisPage() {
                         </Card>
                        
                         {renderResultSection(t('diagnosis'), diagnosis.diagnosis, Bug, "text-destructive")}
-                        
-                        {!diagnosis.isHealthy && diagnosis.diseaseImageUrl && (
-                            <div>
-                                <h3 className="text-xl font-headline font-bold mb-3 flex items-center gap-2 text-orange-600">
-                                    <ImageIcon className="h-6 w-6" /> Reference Image
-                                </h3>
-                                <p className="text-sm text-muted-foreground mb-2">Does your plant look like this? This helps confirm the diagnosis.</p>
-                                <div className="relative w-full h-48 rounded-md overflow-hidden border">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img 
-                                        src={diagnosis.diseaseImageUrl} 
-                                        alt={`Reference image for ${diagnosis.diseaseName}`} 
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
                         {renderResultSection(t('treatment'), diagnosis.treatment, Pill, "text-green-600")}
                         {renderResultSection(t('prevention'), diagnosis.prevention, ShieldCheck, "text-blue-600")}
                     </div>

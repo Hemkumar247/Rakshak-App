@@ -30,8 +30,10 @@ export async function getPlantDiagnosis(input: DiagnosePlantDiseaseInput): Promi
         const result = await diagnosePlantDisease(input);
         return result;
     } catch (error: any) {
-        console.error("Error in getPlantDiagnosis action:", error?.message);
-        console.warn("Returning fallback plant diagnosis due to AI error.");
+        console.error("=== PLANT DIAGNOSIS FAILED ===");
+        console.error("Error message:", error?.message);
+        console.error("Full error:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        console.warn("Returning fallback plant diagnosis.");
         return fallbackDiagnosis;
     }
 }
