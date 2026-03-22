@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Map, Satellite, Loader2, Leaf, CheckCircle } from 'lucide-react';
+import { Map, Satellite, Loader2, Leaf, CheckCircle, Locate } from 'lucide-react';
 import Image from 'next/image';
 
 import { Button } from "@/components/ui/button";
@@ -37,12 +37,47 @@ export default function SatelliteAnalysisPage() {
   const [analysisResult, setAnalysisResult] = useState<SatelliteFarmAnalysisOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [isLocating, setIsLocating] = useState(false);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       coordinates: "",
     },
   });
+
+  const handleFindLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        variant: "destructive",
+        title: "Geolocation not supported",
+        description: "Your browser does not support geolocation.",
+      });
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        form.setValue("coordinates", `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        setIsLocating(false);
+        toast({
+          title: "Location found",
+          description: `Coordinates: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        });
+      },
+      (error) => {
+        console.error("Error finding location:", error);
+        setIsLocating(false);
+        toast({
+          variant: "destructive",
+          title: "Location error",
+          description: "Could not retrieve your location. Please enter coordinates manually.",
+        });
+      }
+    );
+  };
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
@@ -153,9 +188,21 @@ export default function SatelliteAnalysisPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('farmCoordinates')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., 28.6139, 77.2090" {...field} />
-                      </FormControl>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input placeholder="e.g., 28.6139, 77.2090" {...field} />
+                        </FormControl>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="icon"
+                          onClick={handleFindLocation}
+                          disabled={isLocating}
+                          title={t('findLocation')}
+                        >
+                          {isLocating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Locate className="h-4 w-4" />}
+                        </Button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

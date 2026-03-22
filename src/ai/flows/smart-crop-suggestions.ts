@@ -38,6 +38,7 @@ export type SmartCropSuggestionsInput = z.infer<typeof SmartCropSuggestionsInput
 const CropRecommendationSchema = z.object({
     cropName: z.string().describe('The name of the suggested crop.'),
     reasoning: z.array(z.string()).describe('A short, crisp list of reasons why this crop is a good choice.'),
+    fertilizerRecommendations: z.array(z.string()).describe('Recommended fertilizers and usage instructions to maintain soil health and improve productivity.').optional(),
     imageDataUri: z.string().describe("A generated image of the crop.").optional(),
 });
 
@@ -72,13 +73,13 @@ const smartCropSuggestionsFlow = ai.defineFlow(
   CRITICAL INSTRUCTION: You MUST ONLY recommend crops that exist in this exact list of available database items:
   ${supportedCrops.join(', ')}
   
-  For each crop, provide a brief, easy-to-understand list of reasons why it is a good choice, considering factors like climate suitability, profitability, and seasonal timing.
-
-  The entire response, including crop names and reasoning, must be in the following language: ${input.language}.
+  For each crop, provide a brief, easy-to-understand list of reasons why it is a good choice, and 2-3 specific fertilizer recommendations such that the soil maintains its nature and becomes more adaptable for crop cultivation.
+  
+  The entire response, including crop names, reasoning, and fertilizer suggestions, must be in the following language: ${input.language}.
 
   Farm Location: ${input.farmLocation}
   
-  Keep the reasoning points very concise and simple for a farmer to understand.`;
+  Keep the advice very concise and simple for a farmer to understand.`;
 
     // Execute generation with the dynamic prompt
     const {output} = await withRetry(() => ai.generate({

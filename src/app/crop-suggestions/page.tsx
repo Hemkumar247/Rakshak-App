@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Bot, Loader2, CheckCircle, MapPin } from 'lucide-react';
+import { Bot, Loader2, CheckCircle, MapPin, FlaskConical } from 'lucide-react';
 import Image from 'next/image';
 
 import { Button } from "@/components/ui/button";
@@ -192,15 +192,35 @@ export default function CropSuggestionsPage() {
                   <CardHeader>
                     <CardTitle className="text-2xl font-bold font-headline text-primary">{rec.cropName}</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                        {rec.reasoning.map((reason, index) => (
-                            <li key={index} className="flex items-start gap-2">
-                                <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                                <span className="text-foreground/90">{reason}</span>
-                            </li>
-                        ))}
-                    </ul>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        {t('reasonsForRecommendation')}
+                      </h3>
+                      <ul className="space-y-2">
+                          {rec.reasoning.map((reason, index) => (
+                              <li key={index} className="flex items-start gap-2 ml-7">
+                                  <span className="text-foreground/90">{reason}</span>
+                              </li>
+                          ))}
+                      </ul>
+                    </div>
+                    {rec.fertilizerRecommendations && rec.fertilizerRecommendations.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                          <FlaskConical className="h-5 w-5" />
+                          {t('fertilizerRecommendations')}
+                        </h3>
+                        <ul className="space-y-2">
+                            {rec.fertilizerRecommendations.map((fer, index) => (
+                                <li key={index} className="flex items-start gap-2 ml-7 border-l-2 border-blue-200 pl-4 py-1">
+                                    <span className="text-foreground/90 italic">{fer}</span>
+                                </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

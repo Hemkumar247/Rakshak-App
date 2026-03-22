@@ -64,6 +64,9 @@ export const translations = {
     farmLocationPlaceholder: 'e.g., Latitude, Longitude, or Address',
     getSuggestions: 'Get Suggestions',
     recommendations: 'Our Recommendations',
+    fertilizerRecommendations: 'Fertilizer Recommendations',
+    reasonsForRecommendation: 'Reasons for Recommendation',
+    findLocation: 'Find Location',
     
     // Plant Diagnosis
     plantDiagnosisTitle: 'Rakshak AI',
@@ -223,6 +226,9 @@ export const translations = {
     farmLocationPlaceholder: 'उदा., अक्षांश, देशांतर, या पता',
     getSuggestions: 'सुझाव प्राप्त करें',
     recommendations: 'हमारी सिफारिशें',
+    fertilizerRecommendations: 'उर्वरक सिफारिशें',
+    reasonsForRecommendation: 'सिफारिश के कारण',
+    findLocation: 'स्थान खोजें',
 
     // Plant Diagnosis
     plantDiagnosisTitle: 'रक्षक AI',
@@ -382,6 +388,9 @@ export const translations = {
     farmLocationPlaceholder: 'எ.கா., அட்சரேகை, தீர்க்கரேகை, அல்லது முகவரி',
     getSuggestions: 'பரிந்துரைகளைப் பெறுக',
     recommendations: 'எங்கள் பரிந்துரைகள்',
+    fertilizerRecommendations: 'உர பரிந்துரைகள்',
+    reasonsForRecommendation: 'பриந்துரைக்கான காரணங்கள்',
+    findLocation: 'இருப்பிடத்தைக் கண்டுபிடி',
 
     // Plant Diagnosis
     plantDiagnosisTitle: 'ரக்ஷக் AI',
@@ -541,6 +550,9 @@ export const translations = {
     farmLocationPlaceholder: 'ഉദാ: അക്ഷാംശം, രേഖാംശം, അല്ലെങ്കിൽ വിലാസം',
     getSuggestions: 'നിർദ്ദേശങ്ങൾ നേടുക',
     recommendations: 'ഞങ്ങളുടെ ശുപാർശകൾ',
+    fertilizerRecommendations: 'വള ശുപാർശകൾ',
+    reasonsForRecommendation: 'ശുപാർശയ്ക്കുള്ള കാരണങ്ങൾ',
+    findLocation: 'സ്ഥാനം കണ്ടെത്തുക',
     
     // Plant Diagnosis
     plantDiagnosisTitle: 'രക്ഷക് AI',
